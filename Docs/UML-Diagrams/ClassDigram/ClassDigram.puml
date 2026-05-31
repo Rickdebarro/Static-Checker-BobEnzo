@@ -1,0 +1,121 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam theme simple
+
+title Diagrama de Classes Preliminar - Static Checker (BobEnzo2026-1)
+
+class AnalisadorEstatico {
+    - caminhoArquivo : String
+    - nomeArquivo : String
+    - conteudoFonte : String
+    - tabelaSimbolos : TabelaSimbolos
+    - tabelaReservada : TabelaPalavrasReservadas
+    - listaTokens : List<Token>
+    + executar(nomeArquivo : String) : void
+    + carregarArquivo() : boolean
+    + gerarRelatorios() : void
+}
+
+class Alexico {
+    - conteudoFonte : String
+    - tabelaReservada : TabelaPalavrasReservadas
+    - linhaAtual : int
+    - posicaoAtual : int
+    - estadoAtual : class(enum) EstadoAlexico
+    + analisar(conteudo : String) : List<Token>
+    + obterProximoToken() : Token
+    - filtrarCaracteresInvalidos(c : char) : char
+    - processarComentario() : void
+    ...Funções auxiliares para análise léxica (braces, pilhas e etc.)
+    
+}
+
+class Asintatico {
+    - listaTokens : List<Token>
+    - pilhaEscopo : Stack<String>
+    - indiceToken : int
+    - tabelaSimbolos : TabelaSimbolos
+    - estadoAtual : EstadoAsintatico
+    + analisar(tokens : List<Token>) : boolean
+    - abrirEscopo(nomeEscopo : String) : void
+    - fecharEscopo() : void
+    - obterEscopoAtual() : String
+}
+
+class Token {
+    - lexeme : String
+    - codigo : String
+    - linha : int
+    - indiceTabela : int
+    + getLexeme() : String
+    + getCodigo() : String
+    + getLinha() : int
+    + getIndiceTabela() : int
+}
+
+class TabelaPalavrasReservadas {
+    - palavras : Map<String, String>
+    + carregarTabelaFixa() : void
+    + contem(lexeme : String) : boolean
+    + getCodigo(lexeme : String) : String
+}
+
+class TabelaSimbolos {
+    - simbolos : Map<String, Simbolo>
+    - contador : int
+    + inserir(lexeme : String) : int
+    + buscar(lexeme : String) : Simbolo
+    + obterTodos() : List<Simbolo>
+}
+
+class Simbolo {
+    - indice : int
+    - lexeme : String
+    - codigoAtomo : String
+    - tipoAtributo : String
+    - qtdCharsAntesTrunc : int
+    - qtdCharDepoisTrunc : int
+    - linhasOcorrencias : List<Integer>
+    + adicionarLinha(linha : int) : void
+    + setTipoAtributo(tipo : String) : void
+}
+
+class GeradorRelatorioLEX {
+    - codigoEquipe : String
+    - componentes : List<Componente>
+    + gerar(nomeArquivo : String, tokens : List<Token>) : void
+}
+
+class GeradorRelatorioTAB {
+    - codigoEquipe : String
+    - componentes : List<Componente>
+    + gerar(nomeArquivo : String, tabela : TabelaSimbolos) : void
+}
+
+class Componente {
+    - nome : String
+    - email : String
+    - telefone : String
+    + getNome() : String
+    + getEmail() : String
+    + getTelefone() : String
+}
+
+
+AnalisadorEstatico --> Alexico : "cria e gerencia"
+AnalisadorEstatico --> Asintatico : "cria e gerencia"
+AnalisadorEstatico --> TabelaSimbolos : "gerencia"
+AnalisadorEstatico --> TabelaPalavrasReservadas : "inicializa"
+AnalisadorEstatico --> GeradorRelatorioLEX : "usa"
+AnalisadorEstatico --> GeradorRelatorioTAB : "usa"
+Alexico --> Token : "produz"
+Alexico --> TabelaPalavrasReservadas : "consulta"
+Asintatico --> Token : "usa"
+Asintatico --> TabelaSimbolos : "atualiza/consulta"
+TabelaSimbolos "1" *-- "many" Simbolo : "armazena"
+GeradorRelatorioLEX ..> Token : "lê dados"
+GeradorRelatorioLEX "1" *-- "many" Componente : "lista"
+GeradorRelatorioTAB ..> Simbolo : "lê dados"
+GeradorRelatorioTAB "1" *-- "many" Componente : "lista"
+
+@enduml
