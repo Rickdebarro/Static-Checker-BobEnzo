@@ -46,10 +46,12 @@ class Token {
     - lexeme : String
     - codigo : String
     - linha : int
+    -coluna : int
     - indiceTabela : int
     + getLexeme() : String
     + getCodigo() : String
     + getLinha() : int
+    + getColuna() : int
     + getIndiceTabela() : int
 }
 
