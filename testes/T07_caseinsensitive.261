@@ -1,0 +1,15 @@
+PROGRAM TesteCase
+DECLARATIONS
+  vartype INTEGER: X;
+  VARTYPE integer: y;
+  varType Integer: Contador;
+endDeclarations
+FUNCTIONS
+  FuncType INTEGER: Calcular(ParamType INTEGER: A, B)
+  {
+    x := A + B;
+    RETURN x
+  }
+  EndFunction
+EndFunctions
+EndProgram

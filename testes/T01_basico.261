@@ -1,0 +1,5 @@
+program ProgramaMinimo
+declarations
+  varType integer: x;
+endDeclarations
+endProgram

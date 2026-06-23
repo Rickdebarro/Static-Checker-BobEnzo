@@ -1,0 +1,25 @@
+program TesteConstantes
+declarations
+  varType integer: x, y;
+  varType real: z;
+  varType string: msg;
+  varType character: c;
+endDeclarations
+functions
+  funcType void: testar(?)
+  {
+    x := 42;
+    y := 0;
+    z := 3.14;
+    z := 2.718e10;
+    z := 1.5e-3;
+    msg := "ola mundo";
+    msg := "texto com espacos e 123";
+    c := 'A';
+    x := x + 100;
+    y := x - 1;
+    return
+  }
+  endFunction
+endFunctions
+endProgram

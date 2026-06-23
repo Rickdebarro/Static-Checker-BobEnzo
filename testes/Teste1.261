@@ -1,0 +1,15 @@
+program MeuPrograma
+declarations
+  varType integer: x, y, contador;
+  varType real: media;
+  varType string: nome;
+endDeclarations
+functions
+  funcType integer: calcular(paramType integer: a, b)
+  {
+    x := a + b;
+    return x
+  }
+  endFunction
+endFunctions
+endProgram

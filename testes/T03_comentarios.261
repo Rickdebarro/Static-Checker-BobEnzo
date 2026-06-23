@@ -1,0 +1,22 @@
+// Este é um comentário de linha
+program TesteComentarios
+declarations
+  /* Este é um comentário
+     de bloco com múltiplas linhas */
+  varType integer: x;
+  varType real: y; // comentário no fim da linha
+  /* comentário entre declarações */
+  varType string: nome;
+endDeclarations
+functions
+  // função de soma
+  funcType integer: somar(paramType integer: a, b)
+  {
+    /* calcula a soma
+       de dois valores */
+    a := a + b;
+    return a
+  }
+  endFunction
+endFunctions
+endProgram
