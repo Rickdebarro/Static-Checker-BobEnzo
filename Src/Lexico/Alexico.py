@@ -188,7 +188,6 @@ class Alexico:
                 break
 
         # Garante que número truncado não termina em '.' ou 'E' ou sinal
-        # (spec: "garantir que os números após truncar formarão construções válidas")
         lexeme = lexeme.rstrip('.').rstrip('E').rstrip('+-')
 
         codigo = "C07" if tem_ponto else "C06"
@@ -213,7 +212,7 @@ class Alexico:
                 if len(lexeme) < LIMITE:
                     lexeme += c
                 else:
-                    # Forçar fechamento na posição 30 (spec)
+                    # Forçar fechamento na posição 30
                     lexeme = lexeme[:LIMITE - 1] + '"'
                 self.pos += 1
                 self.coluna += 1
@@ -263,7 +262,7 @@ class Alexico:
     # ------------------------------------------------------------------
 
     def _pular_comentario_bloco(self):
-        """/* ... */ — sem fechar, consome até EOF (spec permite)."""
+        """/* ... */ — sem fechar, consome até EOF."""
         self.pos += 2
         self.coluna += 2
         while self.pos < len(self.fonte):

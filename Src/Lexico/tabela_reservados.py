@@ -54,7 +54,7 @@ class TabelaPalavrasReservadas:
             "*":   "B14",
             "/":   "B15",
             "%":   "B16",
-            "#":   "B18",   # alias para != (spec pág. 14)
+            "#":   "B18",   # alias para !=
             "<":   "B19",
             ">":   "B21",
         }
