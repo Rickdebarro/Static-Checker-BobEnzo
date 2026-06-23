@@ -11,14 +11,14 @@ def _eh_valido(c: str) -> bool:
 
 class Alexico:
     def __init__(self, conteudo: str, tabela_reservada: TabelaPalavrasReservadas):
-        self.fonte = conteudo.upper()  # spec: case-insensitive → tudo maiúsculo
+        self.fonte = conteudo.upper() 
         self.tabela_reservada = tabela_reservada
         self.pos = 0
         self.linha = 1
         self.coluna = 1
 
     # ------------------------------------------------------------------
-    # Interface pública — o sintático chama isso UMA VEZ por token
+    # O sintático chama isso UMA VEZ por token
     # ------------------------------------------------------------------
     def obter_proximo_token(self) -> Token | None:
         while self.pos < len(self.fonte):
@@ -154,7 +154,7 @@ class Alexico:
                 self.coluna += 1
 
             elif c == '.' and not tem_ponto:
-                # Ponto só válido se seguido de dígito (spec: realConst)
+                # Ponto só válido se seguido de dígito
                 prox = self._peek(1)
                 if prox and prox.isdigit():
                     tem_ponto = True
@@ -201,7 +201,7 @@ class Alexico:
         col_inicio = self.coluna
         linha_inicio = self.linha
         lexeme = '"'
-        qtd_total = 1       # aspas de abertura conta (spec)
+        qtd_total = 1       
         self.pos += 1
         self.coluna += 1
 
