@@ -1,0 +1,25 @@
+program TesteSimbolos
+declarations
+  varType integer: a, b, resultado;
+  varType boolean: flag;
+endDeclarations
+functions
+  funcType void: operacoes(?)
+  {
+    resultado := a + b;
+    resultado := a - b;
+    resultado := a * b;
+    resultado := a / b;
+    resultado := a % b;
+    flag := a == b;
+    flag := a != b;
+    flag := a # b;
+    flag := a < b;
+    flag := a <= b;
+    flag := a > b;
+    flag := a >= b;
+    return
+  }
+  endFunction
+endFunctions
+endProgram
