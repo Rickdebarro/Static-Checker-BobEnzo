@@ -25,17 +25,36 @@ COMPONENTES = [
 # =============================================================
 # Códigos de átomos que disparam mudança de escopo
 # =============================================================
-_COD_PROGRAM        = "A19"  # program
-_COD_DECLARATIONS   = "A04"  # declarations
-_COD_ENDDECL        = "A06"  # endDeclarations
-_COD_FUNCTIONS      = "A13"  # functions
-_COD_ENDFUNCTIONS   = "A08"  # endFunctions
-_COD_FUNCTYPE       = "A14"  # funcType  → abre escopo de corpo de função
-_COD_ENDFUNCTION    = "A07"  # endFunction
-_COD_ENDPROGRAM     = "A10"  # endProgram
+_COD_PROGRAM      = "A19"  # program
+_COD_DECLARATIONS = "A04"  # declarations
+_COD_ENDDECL      = "A06"  # endDeclarations
+_COD_FUNCTIONS    = "A13"  # functions
+_COD_ENDFUNCTIONS = "A08"  # endFunctions
+_COD_FUNCTYPE     = "A14"  # funcType
+_COD_ENDFUNCTION  = "A07"  # endFunction
+_COD_ENDPROGRAM   = "A10"  # endProgram
+_COD_VARTYPE      = "A24"  # varType
+_COD_LBRACKET     = "B08"  # [  — indica declaração de vetor
 
-# Códigos C que devem ir para a tabela de símbolos
-_CODIGOS_TABELA = {"C01", "C02", "C03", "C04", "C05", "C06", "C07"}
+# Apenas identificadores vão para a tabela de símbolos
+_CODIGOS_TABELA = {"C01", "C02", "C03"} 
+
+# Mapeamento tipo da linguagem
+_TIPO_SIMB = {
+    "A20": "FP",  # real
+    "A16": "IN",  # integer
+    "A22": "ST",  # string
+    "A01": "BL",  # boolean
+    "A03": "CH",  # character
+    "A25": "VD",  # void
+}
+_TIPO_SIMB_ARRAY = {
+    "A20": "AF",  # array of real
+    "A16": "AI",  # array of integer
+    "A22": "AS",  # array of string
+    "A01": "AB",  # array of boolean
+    "A03": "AC",  # array of character
+}
 
 
 def main():
@@ -49,7 +68,6 @@ def main():
 
     entrada = sys.argv[1]
 
-    # Suporte a caminho absoluto ou relativo
     if os.path.isabs(entrada):
         caminho_261 = entrada + ".261"
     else:
@@ -85,18 +103,21 @@ def main():
 
     # ----------------------------------------------------------
     # 4. Loop sintax-driven — UMA chamada ao léxico por token
-    #    O sintático controla o escopo e decide o código C correto
     # ----------------------------------------------------------
     tokens = []
     codigo_anterior: str | None = None
+
+    # Estado para inferência de tipo durante declarações
+    tipo_corrente: str | None = None   # ex: "IN", "FP", "ST"...
+    eh_vetor: bool = False             # Atualizado se após vartype abriu um array
+    indices_declarados: list[int] = [] # índices na tabela dos vars desta declaração
 
     while True:
         tok = lexico.obter_proximo_token()
         if tok is None:
             break  # EOF
 
-        # --- Atualiza o escopo ANTES de processar o identificador ---
-        # (assim quando o identificador chegar o escopo já está correto)
+        # --- Atualiza escopo ---
         if tok.codigo == _COD_PROGRAM:
             escopo.abrir(NivelEscopo.PROGRAMA)
 
@@ -104,29 +125,57 @@ def main():
             escopo.abrir(NivelEscopo.DECLARACOES)
 
         elif tok.codigo == _COD_ENDDECL:
-            escopo.fechar()  # fecha DECLARACOES
+            escopo.fechar()
 
         elif tok.codigo == _COD_FUNCTIONS:
             escopo.abrir(NivelEscopo.FUNCOES)
 
         elif tok.codigo == _COD_FUNCTYPE:
             escopo.abrir(NivelEscopo.CORPO_FUNCAO)
-            escopo.sinalizar_functype()  # próximo identificador = functionName
+            escopo.sinalizar_functype()
 
         elif tok.codigo == _COD_ENDFUNCTION:
-            escopo.fechar()  # fecha CORPO_FUNCAO
+            escopo.fechar()
 
         elif tok.codigo == _COD_ENDFUNCTIONS:
-            escopo.fechar()  # fecha FUNCOES
+            escopo.fechar()
 
         elif tok.codigo == _COD_ENDPROGRAM:
-            escopo.fechar()  # fecha PROGRAMA
+            escopo.fechar()
 
-        # --- Identificadores: refinamento de código e tabela de símbolos ---
+        #Detecta início de declaração de variável: varType <tipo>
+        if tok.codigo == _COD_VARTYPE:
+            tipo_corrente = None
+            eh_vetor = False
+            indices_declarados = []
+
+        # guarda o código A se teve um vartype antes e se o token atual é um tipo válido    
+        elif codigo_anterior in (_COD_VARTYPE, _COD_FUNCTYPE) and tok.codigo in _TIPO_SIMB:
+            tipo_corrente = tok.codigo
+
+        # Detecta se é vetor: varType <tipo> [] 
+        elif tok.codigo == _COD_LBRACKET and escopo.esta_em(NivelEscopo.DECLARACOES):
+            eh_vetor = True
+
+        # Ao encontrar ";" encerra a declaração atual
+        elif tok.codigo == "B01":  # semicolon
+            # Aplica o tipo a todos os identificadores desta declaração
+            if tipo_corrente and indices_declarados:
+                mapa = _TIPO_SIMB_ARRAY if eh_vetor else _TIPO_SIMB
+                sigla = mapa.get(tipo_corrente, "-")
+                for idx in indices_declarados:
+                    simb = tabela_simbolos.buscar_por_indice(idx)
+                    if simb:
+                        simb.set_tipo(sigla)
+            tipo_corrente = None
+            eh_vetor = False
+            indices_declarados = []
+
+        # Refinamento do código do identificador
         if tok.codigo == "C01":
             tok.codigo = escopo.codigo_para_identificador(codigo_anterior)
 
-        # Todos os códigos C vão para a tabela de símbolos
+        # Insere identificadores na tabela de símbolos
         if tok.codigo in _CODIGOS_TABELA:
             idx = tabela_simbolos.inserir_ou_atualizar(
                 lexeme           = tok.lexeme,
@@ -137,12 +186,16 @@ def main():
             )
             tok.indice_tab = idx
 
+            # Acumula os índices de variáveis da declaração corrente para
+            # atribuir o tipo quando encontrar o ";"
+            if tipo_corrente and tok.codigo == "C01":
+                indices_declarados.append(idx)
+
         tokens.append(tok)
         codigo_anterior = tok.codigo
 
     # ----------------------------------------------------------
     # 5. Geração dos relatórios .LEX e .TAB
-    #    Os arquivos são gerados na mesma pasta do .261
     # ----------------------------------------------------------
     caminho_lex = os.path.join(pasta_saida, nome_base + ".LEX")
     caminho_tab = os.path.join(pasta_saida, nome_base + ".TAB")
@@ -159,7 +212,6 @@ def main():
     print(f"  Símbolos na tabela  : {len(tabela_simbolos)}")
     print(f"  Escopo final        : {escopo}")
 
-    return 0;
 
 if __name__ == "__main__":
     main()

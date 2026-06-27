@@ -27,13 +27,21 @@ class GeradorRelatorioLEX:
 
         # --- Uma linha por token, na ordem em que apareceram ---
         for tok in tokens:
-            idx = tok.indice_tab if tok.indice_tab != -1 else "-"
-            linhas.append(
-                f"Lexeme: {tok.lexeme}, "
-                f"Código: {tok.codigo}, "
-                f"indiceTabSimb: {idx}, "
-                f"Linha: {tok.linha}."
-            )
+            if tok.indice_tab != -1:
+
+                linhas.append(
+                    f"Lexeme: {tok.lexeme}, "
+                    f"Código: {tok.codigo}, "
+                    f"indiceTabSimb: {tok.indice_tab}, "
+                    f"Linha: {tok.linha}."
+                )
+            else:
+
+                linhas.append(
+                    f"Lexeme: {tok.lexeme}, "
+                    f"Código: {tok.codigo}, "
+                    f"Linha: {tok.linha}."
+                )
 
         with open(caminho_saida, "w", encoding="utf-8", errors="replace") as f:
             f.write("\n".join(linhas) + "\n")

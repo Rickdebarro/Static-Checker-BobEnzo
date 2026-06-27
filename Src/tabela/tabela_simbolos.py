@@ -43,6 +43,12 @@ class TabelaSimbolos:
     def buscar(self, lexeme: str) -> Simbolo | None:
         return self._simbolos.get(lexeme)
 
+    def buscar_por_indice(self, indice: int) -> Simbolo | None:
+        for s in self._simbolos.values():
+            if s.indice == indice:
+                return s
+        return None
+
     def obter_todos(self) -> list[Simbolo]:
         """Retorna símbolos ordenados pelo índice de inserção."""
         return sorted(self._simbolos.values(), key=lambda s: s.indice)

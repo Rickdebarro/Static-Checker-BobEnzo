@@ -9,22 +9,47 @@ def _eh_valido(c: str) -> bool:
     return c.isalnum() or c in " \t\n\r_.,;:=?()[]{}+-*/%<>!#\"'"
 
 
+def _eh_valido_miolo_cadeia(c: str) -> bool:
+    """
+    Apêndice C — <miolo-cadeia>:
+    Aceita APENAS: letra | branco | dígito | $ | _ | .
+    Tudo o mais (parênteses, vírgula, operadores, etc.) termina a string.
+    """
+    return c.isalpha() or c.isdigit() or c in ' \t$_.'
+
+
+def _eh_valido_identificador(c: str) -> bool:
+    """
+    Apêndice C — <variable>:
+    letra | dígito | _
+    """
+    return c.isalnum() or c == '_'
+
+
+def _eh_valido_nome(c: str) -> bool:
+    """
+    Apêndice C — <programName> e <functionName>:
+    letra | dígito  (SEM underscore — diferente de variable)
+    """
+    return c.isalnum()
+
+
 class Alexico:
     def __init__(self, conteudo: str, tabela_reservada: TabelaPalavrasReservadas):
-        self.fonte = conteudo.upper() 
+        self.fonte = conteudo.upper()  # spec: case-insensitive → tudo maiúsculo
         self.tabela_reservada = tabela_reservada
         self.pos = 0
         self.linha = 1
         self.coluna = 1
 
     # ------------------------------------------------------------------
-    # O sintático chama isso UMA VEZ por token
+    # Interface pública — o sintático chama UMA VEZ por token
     # ------------------------------------------------------------------
     def obter_proximo_token(self) -> Token | None:
         while self.pos < len(self.fonte):
             c = self.fonte[self.pos]
 
-            # Quebras de linha — atualiza contadores, não gera token
+            # Quebras de linha
             if c == '\n':
                 self.linha += 1
                 self.coluna = 1
@@ -34,7 +59,7 @@ class Alexico:
                 self.pos += 1
                 continue
 
-            # Espaços e tabs — delimitadores puros
+            # Espaços e tabs — delimitadores
             if c in (' ', '\t'):
                 self.coluna += 1
                 self.pos += 1
@@ -94,33 +119,39 @@ class Alexico:
     # ------------------------------------------------------------------
 
     def _ler_identificador_ou_reservada(self) -> Token:
+        """
+        Apêndice C:
+          <variable>     ::= <letra> | _ | <variable><letra> | <variable><digito> | <variable>_
+          <programName>  ::= <letra> | <programName><letra> | <programName><digito>
+          <functionName> ::= <letra> | <functionName><letra> | <functionName><digito>
+        
+        """
         lexeme = ""
-        qtd_total = 0       # todos os chars válidos lidos (antes de truncar)
+        qtd_total = 0
         col_inicio = self.coluna
         linha_inicio = self.linha
 
         while self.pos < len(self.fonte):
             c = self.fonte[self.pos]
 
-            if c.isalnum() or c == '_':
-                qtd_total += 1          # conta SEMPRE (mesmo depois do limite)
+            if _eh_valido_identificador(c):
+                # letra, dígito ou _ — válido para variable
+                qtd_total += 1
                 if len(lexeme) < LIMITE:
-                    lexeme += c         # guarda só os 30 primeiros
+                    lexeme += c
                 self.pos += 1
                 self.coluna += 1
 
             elif not _eh_valido(c):
-                # Filtro de 1º nível DENTRO do átomo:
-                # caractere inválido não conta e não quebra o átomo
+                # Filtro de 1º nível dentro do átomo
                 self.pos += 1
                 self.coluna += 1
 
             else:
-                break  # delimitador legítimo — encerra o átomo
+                break  # delimitador legítimo
 
-        qtd_depois_trunc = len(lexeme)  # ≤ 30
+        qtd_depois_trunc = len(lexeme)
 
-        # Palavra reservada tem prioridade
         if self.tabela_reservada.contem(lexeme):
             return Token(
                 lexeme,
@@ -129,7 +160,6 @@ class Alexico:
                 qtd_total, qtd_depois_trunc,
             )
 
-        # Identificador comum — índice será preenchido pelo main
         return Token(
             lexeme, "C01",
             linha_inicio, col_inicio, -1,
@@ -137,6 +167,13 @@ class Alexico:
         )
 
     def _ler_numero(self) -> Token:
+        """
+        Apêndice C:
+          <intConst>  ::= <digitos-decimal>
+          <realConst> ::= <digitos-decimal> . <digitos-decimal>
+                        | <digitos-decimal> . <digitos-decimal> <parte-exponencial>
+          <parte-exponencial> ::= e<digitos> | e-<digitos> | e+<digitos>
+        """
         lexeme = ""
         qtd_total = 0
         col_inicio = self.coluna
@@ -164,10 +201,10 @@ class Alexico:
                     self.pos += 1
                     self.coluna += 1
                 else:
-                    break
+                    break  # ponto sozinho = delimitador
 
             elif c == 'E' and tem_ponto:
-                # Parte exponencial: e<digits> | e+<digits> | e-<digits>
+                # Parte exponencial APENAS em realConst
                 prox = self._peek(1)
                 if prox and (prox.isdigit() or prox in ('+', '-')):
                     qtd_total += 1
@@ -182,12 +219,17 @@ class Alexico:
                             lexeme += self.fonte[self.pos]
                         self.pos += 1
                         self.coluna += 1
+                    # dígitos obrigatórios após e/e+/e-
+                    if not (self.pos < len(self.fonte) and self.fonte[self.pos].isdigit()):
+                        # sem dígitos após e → volta atrás, encerra antes do e
+                        lexeme = lexeme.rstrip('E').rstrip('+-')
+                        break
                 else:
                     break
             else:
                 break
 
-        # Garante que número truncado não termina em '.' ou 'E' ou sinal
+        # Garante que número truncado não termina em '.', 'E' ou sinal
         lexeme = lexeme.rstrip('.').rstrip('E').rstrip('+-')
 
         codigo = "C07" if tem_ponto else "C06"
@@ -196,35 +238,51 @@ class Alexico:
                      qtd_total, qtd_depois_trunc)
 
     def _ler_string(self) -> Token:
-        """stringConst: inicia e termina com aspas duplas."""
+        """
+        Apêndice C:
+          <stringConst> ::= '"' <miolo-cadeia> '"'
+          <miolo-cadeia> aceita APENAS: letra | branco | dígito | $ | _ | .
+        """
         col_inicio = self.coluna
         linha_inicio = self.linha
         lexeme = '"'
-        qtd_total = 1       
+        qtd_total = 1       # aspa de abertura conta
+        truncado = False
         self.pos += 1
         self.coluna += 1
 
         while self.pos < len(self.fonte):
             c = self.fonte[self.pos]
 
+            # Fechamento normal com aspa dupla
             if c == '"':
                 qtd_total += 1
-                if len(lexeme) < LIMITE:
-                    lexeme += c
-                else:
-                    # Forçar fechamento na posição 30
-                    lexeme = lexeme[:LIMITE - 1] + '"'
+                if not truncado:
+                    if len(lexeme) < LIMITE:
+                        lexeme += c
+                    else:
+                        lexeme = lexeme[:LIMITE - 1] + '"'
                 self.pos += 1
                 self.coluna += 1
                 break
 
+            # Quebra de linha — encerra string sem fechar
             if c in ('\n', '\r'):
-                # String não fechada na linha — encerra
                 break
 
+            # Caractere INVÁLIDO para o miolo
+            if not _eh_valido_miolo_cadeia(c):
+                break
+
+            # Caractere válido do miolo
             qtd_total += 1
-            if len(lexeme) < LIMITE:
-                lexeme += c
+            if not truncado:
+                if len(lexeme) < LIMITE - 1:
+                    lexeme += c
+                else:
+                    lexeme = lexeme[:LIMITE - 1] + '"'
+                    truncado = True
+
             self.pos += 1
             self.coluna += 1
 
@@ -233,20 +291,25 @@ class Alexico:
                      qtd_total, qtd_depois_trunc)
 
     def _ler_char(self) -> Token:
-        """charConst: ' <letra> '  (exatamente uma letra entre aspas simples)."""
+        """
+        Apêndice C:
+          <charConst> ::= "'" <letra> "'"
+        """
         col_inicio = self.coluna
         linha_inicio = self.linha
         lexeme = "'"
-        qtd_total = 1       # aspas de abertura conta
+        qtd_total = 1
         self.pos += 1
         self.coluna += 1
 
+        # Consome exatamente uma letra
         if self.pos < len(self.fonte) and self.fonte[self.pos].isalpha():
             lexeme += self.fonte[self.pos]
             qtd_total += 1
             self.pos += 1
             self.coluna += 1
 
+        # Consome a aspa de fechamento
         if self.pos < len(self.fonte) and self.fonte[self.pos] == "'":
             lexeme += "'"
             qtd_total += 1
@@ -258,7 +321,7 @@ class Alexico:
                      qtd_total, qtd_depois_trunc)
 
     # ------------------------------------------------------------------
-    # Helpers
+    # Helpers de comentário
     # ------------------------------------------------------------------
 
     def _pular_comentario_bloco(self):

@@ -36,15 +36,13 @@ class ControladorEscopo:
 
     def codigo_para_identificador(self, codigo_token_anterior: str | None) -> str:
         """
-        Decide o código C do identificador com base no escopo e no token anterior.
-        Chamado pelo main ANTES de inserir o identificador na tabela.
-                
+        Decide o código C do identificador com base no escopo e no token anterior, um pouco de base no apêndice b, para decidir entre ProgramName, FunctionName e VariableName.
         """
-        
+        # Logo após "program" viria o nome do programa
         if codigo_token_anterior == "A19":
             return "C03"
 
-
+        # Primeiro identificador após "funcType <tipo> :" → nome da função
         if self._aguardando_nome_funcao:
             self._aguardando_nome_funcao = False
             return "C02"
