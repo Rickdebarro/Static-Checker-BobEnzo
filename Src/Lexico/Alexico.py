@@ -66,17 +66,17 @@ class Alexico:
                 continue
 
             # Comentário de bloco /* ... */
-            if c == '/' and self._peek(1) == '*':
+            if c == '/' and self._caracter_a_frente(1) == '*':
                 self._pular_comentario_bloco()
                 continue
 
             # Comentário de linha // ...
-            if c == '/' and self._peek(1) == '/':
+            if c == '/' and self._caracter_a_frente(1) == '/':
                 self._pular_comentario_linha()
                 continue
 
             # Identificador ou palavra reservada
-            if c.isalpha() or c == '_':
+            if c.isalpha() or c == '_': #letra ou começa com underline
                 return self._ler_identificador_ou_reservada()
 
             # Número inteiro ou real
@@ -92,7 +92,7 @@ class Alexico:
                 return self._ler_char()
 
             # Símbolo de 2 caracteres — testa ANTES do de 1
-            dois = c + (self._peek(1) or "")
+            dois = c + (self._caracter_a_frente(1) or "")
             if self.tabela_reservada.contem(dois):
                 col = self.coluna
                 self.pos += 2
@@ -136,20 +136,21 @@ class Alexico:
 
             if _eh_valido_identificador(c):
                 # letra, dígito ou _ — válido para variable
-                qtd_total += 1
-                if len(lexeme) < LIMITE:
+                qtd_total += 1 # Incrementa tamanho total do lexeme
+                if len(lexeme) < LIMITE: 
+                    # Apenas considera no lexeme até o limite estabelecido
                     lexeme += c
                 self.pos += 1
                 self.coluna += 1
 
-            elif not _eh_valido(c):
+            elif not _eh_valido(c): # se não for válido só segue
                 # Filtro de 1º nível dentro do átomo
                 self.pos += 1
                 self.coluna += 1
 
             else:
-                break  # delimitador legítimo
-
+                break  # delimitador legítimo, foi o máximo que conseguiu formar permanecendo o mesmo átomo
+        
         qtd_depois_trunc = len(lexeme)
 
         if self.tabela_reservada.contem(lexeme):
@@ -183,21 +184,23 @@ class Alexico:
         while self.pos < len(self.fonte):
             c = self.fonte[self.pos]
 
+            # leitura de numeros
             if c.isdigit():
                 qtd_total += 1
                 if len(lexeme) < LIMITE:
-                    lexeme += c
+                    lexeme += c # lexeme é construido apenas até o limite
                 self.pos += 1
                 self.coluna += 1
 
+            # Caso um ponto seja achado
             elif c == '.' and not tem_ponto:
                 # Ponto só válido se seguido de dígito
-                prox = self._peek(1)
+                prox = self._caracter_a_frente(1)
                 if prox and prox.isdigit():
                     tem_ponto = True
                     qtd_total += 1
                     if len(lexeme) < LIMITE:
-                        lexeme += c
+                        lexeme += c  # lexeme é construido apenas até o limite
                     self.pos += 1
                     self.coluna += 1
                 else:
@@ -205,7 +208,7 @@ class Alexico:
 
             elif c == 'E' and tem_ponto:
                 # Parte exponencial APENAS em realConst
-                prox = self._peek(1)
+                prox = self._caracter_a_frente(1)
                 if prox and (prox.isdigit() or prox in ('+', '-')):
                     qtd_total += 1
                     if len(lexeme) < LIMITE:
@@ -330,23 +333,29 @@ class Alexico:
         self.coluna += 2
         while self.pos < len(self.fonte):
             c = self.fonte[self.pos]
+            # pula a linha e reseta coluna
             if c == '\n':
                 self.linha += 1
                 self.coluna = 1
-            elif c == '*' and self._peek(1) == '/':
+            #identifica o fechamento do comentário
+            elif c == '*' and self._caracter_a_frente(1) == '/':
                 self.pos += 2
                 self.coluna += 2
                 return
+            #continua a leitura do comentário
             self.pos += 1
             self.coluna += 1
 
     def _pular_comentario_linha(self):
         """// ... até \\n ou EOF."""
+        #pulando os dois caracteres iniciais "//"
         self.pos += 2
         self.coluna += 2
+        # vai até o final da linha ou final do arquivo
         while self.pos < len(self.fonte) and self.fonte[self.pos] != '\n':
             self.pos += 1
 
-    def _peek(self, offset: int) -> str | None:
+    def _caracter_a_frente(self, offset: int) -> str | None:
+        """Retorna o caractere na posição `offset` à frente."""
         idx = self.pos + offset
         return self.fonte[idx] if idx < len(self.fonte) else None
