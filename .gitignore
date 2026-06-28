@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# === ARQUIVOS DO PYINSTALLER (Adicionado) ===
+build/
+*.spec
+
+# Relatórios gerados pelo Static Checker
+*.LEX
+*.TAB
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

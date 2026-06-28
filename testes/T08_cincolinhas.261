@@ -1,0 +1,19 @@
+program TesteLinhas
+declarations
+  varType integer: x;
+endDeclarations
+functions
+  funcType void: repetir(?)
+  {
+    x := 1;
+    x := 2;
+    x := x + 1;
+    x := x + 1;
+    x := x + 1;
+    x := x + 1;
+    x := x + 1;
+    return
+  }
+  endFunction
+endFunctions
+endProgram

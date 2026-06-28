@@ -1,0 +1,11 @@
+program TesteVariaveis
+declarations
+  varType integer: x, y, contador;
+  varType real: media, temperatura;
+  varType string: nome, cidade;
+  varType boolean: ativo, encontrado;
+  varType character: letra, inicial;
+  varType integer []: idades[10], notas[5];
+  varType real []: precos[20];
+endDeclarations
+endProgram

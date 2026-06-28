@@ -2,120 +2,118 @@
 skinparam classAttributeIconSize 0
 skinparam theme simple
 
-title Diagrama de Classes Preliminar - Static Checker (BobEnzo2026-1)
+title Diagrama de Classes - Static Checker (Atualizado)
 
-class AnalisadorEstatico {
-    - caminhoArquivo : String
-    - nomeArquivo : String
-    - conteudoFonte : String
-    - tabelaSimbolos : TabelaSimbolos
-    - tabelaReservada : TabelaPalavrasReservadas
-    - listaTokens : List<Token>
-    + executar(nomeArquivo : String) : void
-    + carregarArquivo() : boolean
-    + gerarRelatorios() : void
+class Main_Script << (M, #FF7700) Script >> {
+    + main() : void
 }
 
 class Alexico {
-    - conteudoFonte : String
-    - tabelaReservada : TabelaPalavrasReservadas
-    - linhaAtual : int
-    - posicaoAtual : int
-    - estadoAtual : class(enum) EstadoAlexico
-    + analisar(conteudo : String) : List<Token>
-    + obterProximoToken() : Token
-    - filtrarCaracteresInvalidos(c : char) : char
-    - processarComentario() : void
-    ...Funções auxiliares para análise léxica (braces, pilhas e etc.)
-    
+    - fonte : String
+    - tabela_reservada : TabelaPalavrasReservadas
+    - pos : int
+    - linha : int
+    - coluna : int
+    + obter_proximo_token() : Token
+    - _ler_identificador_ou_reservada() : Token
+    - _ler_numero() : Token
+    - _ler_string() : Token
+    - _ler_char() : Token
+    - _pular_comentario_bloco() : void
+    - _pular_comentario_linha() : void
+    - _caracter_a_frente(offset : int) : String
 }
 
-class Asintatico {
-    - listaTokens : List<Token>
-    - pilhaEscopo : Stack<String>
-    - indiceToken : int
-    - tabelaSimbolos : TabelaSimbolos
-    - estadoAtual : EstadoAsintatico
-    + analisar(tokens : List<Token>) : boolean
-    - abrirEscopo(nomeEscopo : String) : void
-    - fecharEscopo() : void
-    - obterEscopoAtual() : String
+enum NivelEscopo {
+    FORA
+    PROGRAMA
+    DECLARACOES
+    FUNCOES
+    CORPO_FUNCAO
+}
+
+class ControladorEscopo {
+    - _pilha : List<NivelEscopo>
+    - _aguardando_nome_funcao : boolean
+    + atual() : NivelEscopo
+    + abrir(nivel : NivelEscopo) : void
+    + fechar() : void
+    + esta_em(nivel : NivelEscopo) : boolean
+    + codigo_para_identificador(codigo_token_anterior : String) : String
+    + sinalizar_functype() : void
+    + __str__() : String
 }
 
 class Token {
     - lexeme : String
     - codigo : String
     - linha : int
-    - indiceTabela : int
-    + getLexeme() : String
-    + getCodigo() : String
-    + getLinha() : int
-    + getIndiceTabela() : int
+    - coluna : int
+    - indice_tab : int
+    - qtd_antes_trunc : int
+    - qtd_depois_trunc : int
+    + __str__() : String
 }
 
 class TabelaPalavrasReservadas {
-    - palavras : Map<String, String>
-    + carregarTabelaFixa() : void
+    - _palavras : Map<String, String>
+    + carregar_tabela_fixa() : void
     + contem(lexeme : String) : boolean
-    + getCodigo(lexeme : String) : String
+    + get_codigo(lexeme : String) : String
 }
 
 class TabelaSimbolos {
-    - simbolos : Map<String, Simbolo>
-    - contador : int
-    + inserir(lexeme : String) : int
+    - _simbolos : Map<String, Simbolo>
+    - _contador : int
+    + inserir_ou_atualizar(lexeme : String, codigo : String, qtd_antes_trunc : int, qtd_depois_trunc : int, linha : int) : int
     + buscar(lexeme : String) : Simbolo
-    + obterTodos() : List<Simbolo>
+    + buscar_por_indice(indice : int) : Simbolo
+    + obter_todos() : List<Simbolo>
+    + __len__() : int
 }
 
 class Simbolo {
     - indice : int
     - lexeme : String
-    - codigoAtomo : String
-    - tipoAtributo : String
-    - qtdCharsAntesTrunc : int
-    - qtdCharDepoisTrunc : int
-    - linhasOcorrencias : List<Integer>
-    + adicionarLinha(linha : int) : void
-    + setTipoAtributo(tipo : String) : void
+    - codigo : String
+    - qtd_antes_trunc : int
+    - qtd_depois_trunc : int
+    - tipo : String
+    - linhas : List<Integer>
+    + adicionar_linha(linha : int) : void
+    + set_tipo(tipo : String) : void
+    + __str__() : String
 }
 
 class GeradorRelatorioLEX {
-    - codigoEquipe : String
-    - componentes : List<Componente>
-    + gerar(nomeArquivo : String, tokens : List<Token>) : void
+    - codigo_equipe : String
+    - componentes : List<Dict>
+    + gerar(caminho_saida : String, nome_fonte : String, tokens : List<Token>) : void
 }
 
 class GeradorRelatorioTAB {
-    - codigoEquipe : String
-    - componentes : List<Componente>
-    + gerar(nomeArquivo : String, tabela : TabelaSimbolos) : void
+    - codigo_equipe : String
+    - componentes : List<Dict>
+    + gerar(caminho_saida : String, nome_fonte : String, tabela : TabelaSimbolos) : void
 }
 
-class Componente {
-    - nome : String
-    - email : String
-    - telefone : String
-    + getNome() : String
-    + getEmail() : String
-    + getTelefone() : String
-}
+' Relacionamentos
+Main_Script --> Alexico : "instancia e usa"
+Main_Script --> TabelaSimbolos : "instancia e gerencia"
+Main_Script --> TabelaPalavrasReservadas : "instancia"
+Main_Script --> ControladorEscopo : "instancia e usa"
+Main_Script --> GeradorRelatorioLEX : "instancia e usa"
+Main_Script --> GeradorRelatorioTAB : "instancia e usa"
 
+ControladorEscopo o-- NivelEscopo : "mantém na pilha"
 
-AnalisadorEstatico --> Alexico : "cria e gerencia"
-AnalisadorEstatico --> Asintatico : "cria e gerencia"
-AnalisadorEstatico --> TabelaSimbolos : "gerencia"
-AnalisadorEstatico --> TabelaPalavrasReservadas : "inicializa"
-AnalisadorEstatico --> GeradorRelatorioLEX : "usa"
-AnalisadorEstatico --> GeradorRelatorioTAB : "usa"
-Alexico --> Token : "produz"
+Alexico --> Token : "cria"
 Alexico --> TabelaPalavrasReservadas : "consulta"
-Asintatico --> Token : "usa"
-Asintatico --> TabelaSimbolos : "atualiza/consulta"
-TabelaSimbolos "1" *-- "many" Simbolo : "armazena"
-GeradorRelatorioLEX ..> Token : "lê dados"
-GeradorRelatorioLEX "1" *-- "many" Componente : "lista"
-GeradorRelatorioTAB ..> Simbolo : "lê dados"
-GeradorRelatorioTAB "1" *-- "many" Componente : "lista"
+
+TabelaSimbolos "1" *-- "many" Simbolo : "armazena e gerencia"
+
+GeradorRelatorioLEX ..> Token : "formata dados"
+GeradorRelatorioTAB ..> Simbolo : "formata dados"
+GeradorRelatorioTAB ..> TabelaSimbolos : "obtém símbolos"
 
 @enduml

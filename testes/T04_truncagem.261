@@ -1,0 +1,7 @@
+program TesteTruncagem
+declarations
+  varType integer: variavelComNomeMuitoGrandeQueUltrapassaTrintaCaracteres;
+  varType real: x;
+  varType string: nomeCurtoDe10Chars, outroNomeGrandeQueDeveSerTruncadoAqui;
+endDeclarations
+endProgram
