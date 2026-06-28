@@ -67,16 +67,24 @@ def main():
         return
 
     entrada = sys.argv[1]
+    
+    _, extensao = os.path.splitext(entrada)
+
+    if extensao == "":
+        entrada += ".261"
+        
+    elif extensao != ".261":
+        print("Erro: Extensão inválida. O arquivo deve ter extensão '.261'.")
+        return
 
     if os.path.isabs(entrada):
-        caminho_261 = entrada + ".261"
+        caminho_261 = entrada
     else:
-        caminho_261 = os.path.join(os.getcwd(), entrada + ".261")
+        caminho_261 = os.path.join(os.getcwd(), entrada)
 
     if not os.path.isfile(caminho_261):
         print(f"Erro: arquivo '{caminho_261}' não encontrado.")
         return
-
     # ----------------------------------------------------------
     # 2. Abertura do arquivo fonte
     # ----------------------------------------------------------
@@ -108,7 +116,7 @@ def main():
     codigo_anterior: str | None = None
 
     # Estado para inferência de tipo durante declarações
-    tipo_corrente: str | None = None   # ex: "IN", "FP", "ST"...
+    tipo_atual: str | None = None   # ex: "IN", "FP", "ST"...
     eh_vetor: bool = False             # Atualizado se após vartype abriu um array
     indices_declarados: list[int] = [] # índices na tabela dos vars desta declaração
 
@@ -145,13 +153,13 @@ def main():
 
         #Detecta início de declaração de variável: varType <tipo>
         if tok.codigo == _COD_VARTYPE:
-            tipo_corrente = None
+            tipo_atual = None
             eh_vetor = False
             indices_declarados = []
 
         # guarda o código A se teve um vartype antes e se o token atual é um tipo válido    
         elif codigo_anterior in (_COD_VARTYPE, _COD_FUNCTYPE) and tok.codigo in _TIPO_SIMB:
-            tipo_corrente = tok.codigo
+            tipo_atual = tok.codigo
 
         # Detecta se é vetor: varType <tipo> [] 
         elif tok.codigo == _COD_LBRACKET and escopo.esta_em(NivelEscopo.DECLARACOES):
@@ -160,14 +168,14 @@ def main():
         # Ao encontrar ";" encerra a declaração atual
         elif tok.codigo == "B01":  # semicolon
             # Aplica o tipo a todos os identificadores desta declaração
-            if tipo_corrente and indices_declarados:
+            if tipo_atual and indices_declarados:
                 mapa = _TIPO_SIMB_ARRAY if eh_vetor else _TIPO_SIMB
-                sigla = mapa.get(tipo_corrente, "-")
+                sigla = mapa.get(tipo_atual, "-")
                 for idx in indices_declarados:
                     simb = tabela_simbolos.buscar_por_indice(idx)
                     if simb:
                         simb.set_tipo(sigla)
-            tipo_corrente = None
+            tipo_atual = None
             eh_vetor = False
             indices_declarados = []
 
@@ -188,7 +196,7 @@ def main():
 
             # Acumula os índices de variáveis da declaração corrente para
             # atribuir o tipo quando encontrar o ";"
-            if tipo_corrente and tok.codigo == "C01":
+            if tipo_atual and tok.codigo == "C01":
                 indices_declarados.append(idx)
 
         tokens.append(tok)
@@ -211,7 +219,7 @@ def main():
     print(f"  Tokens reconhecidos : {len(tokens)}")
     print(f"  Símbolos na tabela  : {len(tabela_simbolos)}")
     print(f"  Escopo final        : {escopo}")
-
+    return 0;
 
 if __name__ == "__main__":
     main()
