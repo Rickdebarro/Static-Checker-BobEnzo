@@ -10,6 +10,10 @@ __pycache__/
 venv/
 env/
 
+# === ARQUIVOS DO PYINSTALLER (Adicionado) ===
+build/
+*.spec
+
 # Relatórios gerados pelo Static Checker
 *.LEX
 *.TAB
