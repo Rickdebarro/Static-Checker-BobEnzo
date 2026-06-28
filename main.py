@@ -85,6 +85,7 @@ def main():
     if not os.path.isfile(caminho_261):
         print(f"Erro: arquivo '{caminho_261}' não encontrado.")
         return
+    
     # ----------------------------------------------------------
     # 2. Abertura do arquivo fonte
     # ----------------------------------------------------------
